@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3 uid="uid://dd0dk0bhp23r"]
+
+[ext_resource type="Script" uid="uid://dr1ri0c16bw7l" path="res://hud.gd" id="1_k5de2"]
+
+[node name="Hud" type="CanvasLayer"]
+script = ExtResource("1_k5de2")
+
+[node name="Label" type="Label" parent="."]
+offset_left = 22.0
+offset_top = 5.0
+offset_right = 156.0
+offset_bottom = 639.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 24

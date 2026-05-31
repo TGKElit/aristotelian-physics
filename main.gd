@@ -1,14 +1,13 @@
 extends Node2D
-@export var multi_threading: bool
+
 @export var grid_scalar: int = 8
 @export var element_purity: int = 200
 @export var drift_chance: float = 0.5
 @export var aspect_ratio = Vector2i(16, 9)
 
-
 @export var earth: Dictionary = {
 	density = 4,
-	color = Color(0.4, 0.25, 0.2)
+	color = Color(0.4, 0.3, 0.2)
 	}
 @export var water: Dictionary = {
 	density = 3,
@@ -20,7 +19,7 @@ extends Node2D
 	}
 @export var fire: Dictionary = {
 	density = 1,
-	color = Color(1, 1, 0)
+	color = Color(0.85, 0.83, 0.1)
 	}
 	
 var viewport_width: float
@@ -34,8 +33,6 @@ var cell_height: float
 var grid: Array[Array]
 
 var rng = RandomNumberGenerator.new()
-
-var threads: Array[Thread]
 
 func _ready() -> void:
 	viewport_width = get_viewport_rect().size.x
@@ -59,7 +56,8 @@ func _ready() -> void:
 				earth = earth_con / element_sum,
 				water = water_con / element_sum,
 				air = air_con / element_sum,
-				fire = fire_con / element_sum
+				fire = fire_con / element_sum,
+				wait_time = 0.0
 			})
 	
 	
@@ -67,38 +65,19 @@ func _ready() -> void:
 func _draw():
 	for x in grid_width:
 		for y in grid_height:
-			
 			var color: Color = Color(earth.color, grid[x][y].earth).blend(Color(water.color, grid[x][y].water)).blend(Color(air.color, grid[x][y].air)).blend(Color(fire.color, grid[x][y].fire))
-			
 			draw_rect(Rect2(x * cell_width, y * cell_height, cell_width, cell_height), color)
 	
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	
-	natural_movement()
+	natural_movement(delta)
 	
 	#random_movement()
-	if rng.randf() < 0.5:
-		grid[grid_width*rng.randf()][2] = {
-			earth = 1.0,
-			water = 0.0,
-			air = 0.0,
-			fire = 0.0
-		}
-	if rng.randf() < 1:
-		grid[grid_width*rng.randf()][2] = {
-			earth = 0.0,
-			water = 1.0,
-			air = 0.0,
-			fire = 0.0
-		}
-	if rng.randf() < 1:
-		grid[grid_width*rng.randf()][grid_height-2] = {
-			earth = 0.0,
-			water = 0.0,
-			air = 0.0,
-			fire = 1.0
-		}
+	
+	if rng.randf()<0.05:
+		spawn_cell(rng.randf()*grid_width,0,1,0,0,0)
+		spawn_cell(rng.randf()*grid_width,grid_height-1,0,0,0,1)
 	
 	queue_redraw()
 	
@@ -106,60 +85,32 @@ func _process(_delta: float) -> void:
 func weight(composition: Dictionary) -> float:
 	return composition.earth * earth.density + composition.water * water.density + composition.air * air.density + composition.fire * fire.density
 
-func natural_movement():
+func natural_movement(delta):
 	for x in grid_width:
-		#vertical_movement(x)
-		#alternating_sort(x, 0)
-		alternating_sort(x, 1)
+		alternating_sort(x, 0, delta)
+		alternating_sort(x, 1, delta)
 			
-func alternating_sort(x, parity):
-	for half_y in grid_height/2 - parity:
-		var y = 2 * half_y + parity
-		if weight(grid[x][y])>weight(grid[x][y+1]):
-			var temp_xy = grid[x][y]
-			grid[x][y] = grid[x][y+1]
-			grid[x][y+1] = temp_xy
-	
-
-
-func vertical_movement(x):
-	var moved: int = 0
-	for y in grid_height - 1:
+func alternating_sort(x, parity, delta):
+	for half_y in grid_height/2 - parity * ((grid_height+1)%2):
+		var y: int = 2 * half_y + parity
+		var faller = grid[x][y]
+		var riser = grid[x][y+1]
+		var speed: float = weight(faller)/weight(riser)
+		
+		grid[x][y].wait_time += delta
+		grid[x][y+1].wait_time += delta
+		
+		if speed > 1 / min(grid[x][y].wait_time, grid[x][y+1].wait_time):
 			
-			var compositions: Array[Dictionary]
-			var max_speed: int = min(round(weight(grid[x][y])/weight(grid[x][y+1])), grid_height - y - 1)
-			for n in max_speed:
-				compositions.append(grid[x][y+n+1])
+			grid[x][y] = riser
+			grid[x][y+1] = faller
 			
-			if moved > 0:
-				moved -= 1
-			else:
-				for n in max_speed:
-					if weight(grid[x][y+n])/weight(grid[x][y+n+1]) > 1:
-						grid[x][y+n+1] = grid[x][y+n]
-						grid[x][y+n] = compositions[n]
-						moved += 1
-	for y in grid_height - 1:
-			
-			var compositions: Array[Dictionary]
-			var max_speed: int = 0#min(round(weight(grid[x][grid_height-1-y])/weight(grid[x][grid_height-1-(y+1)])), y)
-			for n in max_speed:
-				compositions.append(grid[x][y-(n+1)])
-			
-			if moved > 0:
-				moved -= 1
-			else:
-				for n in max_speed:
-					if weight(grid[x][grid_height-y-n])/weight(grid[x][grid_height-y-(n+1)]) > 1:
-						grid[x][grid_height-y-(n+1)] = grid[x][grid_height-y-n]
-						grid[x][grid_height-y-n] = compositions[n]
-						moved += 1
-			
+			grid[x][y].wait_time = 0.0
+			grid[x][y+1].wait_time = 0.0
 
 func random_movement():
 	var composition: Dictionary
 	var composition_left: Dictionary
-	
 	
 	for y in grid_height:
 		for x in grid_width:
@@ -169,3 +120,12 @@ func random_movement():
 			if rng.randf()*weight(composition)*weight(composition_left) < 0.5:
 				grid[x][y] = composition_left
 				grid[x-1][y] = composition
+
+func spawn_cell(x:int, y:int, earth:float, water:float, air:float, fire:float):
+	grid[x][y] = {
+		earth = earth,
+		water = water,
+		air = air,
+		fire = fire,
+		wait_time = 0.0
+	}

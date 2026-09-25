@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://y6q6vnuxjh2u"]
+
+[ext_resource type="Script" uid="uid://bdy1fsh7jgim4" path="res://shader_tester.gd" id="1_3h0p4"]
+
+[node name="ShaderTester" type="Node2D"]
+texture_filter = 1
+script = ExtResource("1_3h0p4")

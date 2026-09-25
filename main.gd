@@ -15,7 +15,7 @@ extends Node2D
 	color = Color(0, 0, 1)
 	}
 @export var air: Dictionary = {
-	density = 2,
+	density = 4,
 	color = Color(0.51, 0.86, 1)
 	}
 @export var fire: Dictionary = {

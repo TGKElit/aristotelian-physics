@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://dfn8eivw4567k"
+path="res://.godot/imported/velocity_to_position.glsl-5db45b00d44ce1ec1bd75283745022a9.res"
+
+[deps]
+
+source_file="res://velocity_to_position.glsl"
+dest_files=["res://.godot/imported/velocity_to_position.glsl-5db45b00d44ce1ec1bd75283745022a9.res"]
+
+[params]
+
